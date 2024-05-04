@@ -37,28 +37,15 @@ class FileStorage:
                 temp[key] = val.to_dict()
             json.dump(temp, f)
 
-    def delete(self, obj=None):
-        """Delete obj from __objects
-
-        If obj is equal to None, the method should not do anything.
-        Args:
-            obj (models.class.<any model>, optional): object to delete.
-            Defaults to None.
-        """
-        if obj in self.__objects.values():
-            key = "{}.{}".format(type(obj).__name__, obj.id)
-            del(self.__objects[key])
-        return
-
     def reload(self):
         """Loads storage dictionary from file"""
-        from models.base_model import BaseModel
-        from models.user import User
-        from models.place import Place
-        from models.state import State
-        from models.city import City
         from models.amenity import Amenity
+        from models.base_model import BaseModel
+        from models.city import City
+        from models.place import Place
         from models.review import Review
+        from models.state import State
+        from models.user import User
 
         classes = {
                     'BaseModel': BaseModel, 'User': User, 'Place': Place,
@@ -73,3 +60,21 @@ class FileStorage:
                     self.all()[key] = classes[val['__class__']](**val)
         except FileNotFoundError:
             pass
+
+    def delete(self, obj=None):
+        """Delete obj from __objects
+
+        If obj is equal to None, the method should not do anything.
+        Args:
+            obj (models.class.<any model>, optional): object to delete.
+            Defaults to None.
+        """
+        if obj in self.__objects.values():
+            key = "{}.{}".format(type(obj).__name__, obj.id)
+            del(self.__objects[key])
+        return
+
+    def close(self):
+        """Calls reload method for deserializing the JSON file to objects
+        """
+        self.reload()
