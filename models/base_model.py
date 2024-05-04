@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """This module defines a base class for all models in our hbnb clone"""
 import uuid
+import models
 from datetime import datetime
 import sqlalchemy
 import os
@@ -21,7 +22,6 @@ class BaseModel:
 
         """Instatntiates a new model"""
         if not kwargs:
-            from models import storage
             self.id = str(uuid.uuid4())
             self.created_at = datetime.now()
             self.updated_at = datetime.now()
@@ -54,15 +54,17 @@ class BaseModel:
         storage.save()
 
     def to_dict(self):
-        """Convert instance into dict format"""
-        dictionary = {}
-        dictionary.update(self.__dict__)
-        dictionary.update({'__class__':
-                          (str(type(self)).split('.')[-1]).split('\'')[0]})
-        dictionary['created_at'] = self.created_at.isoformat()
-        dictionary['updated_at'] = self.updated_at.isoformat()
-        return dictionary
+        """Creates dictionary of the class.
 
+        Returns:
+            dict: key values in __dict__.
+        """
+        my_dict = {key: value for key, value in dict(
+            self.__dict__).items() if key != "_sa_instance_state"}
+        my_dict["__class__"] = str(type(self).__name__)
+        my_dict["created_at"] = self.created_at.isoformat()
+        my_dict["updated_at"] = self.updated_at.isoformat()
+        return my_dict
 
     def delete(self):
         """Deletes this BaseModel instance from the storage"""
