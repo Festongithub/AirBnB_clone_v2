@@ -1,89 +1,47 @@
-#!/usr/bin/env bash
-# script that sets up your web servers for the deployment of web_static.
-# shellcheck disable=SC2230
+#!/bin/bash
 
-if [[ "$(which nginx | grep -c nginx)" == '0' ]]; then
-    apt-get update
-    apt-get -y install nginx
+# Install Nginx if it's not already installed
+if ! command -v nginx &> /dev/null
+then
+    sudo apt update
+    sudo apt install nginx -y
 fi
 
-# Create config file
-SERVER_CONFIG="server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
+# Create necessary directories if they don't exist
+sudo mkdir -p /data/web_static/releases/test
+sudo mkdir -p /data/web_static/shared
 
-	server_name _;
-	index index.html index.htm;
-	error_page 404 /404.html;
-	add_header X-Served-By \$hostname;
+# Create a fake HTML file
+echo "<html><head><title>Test Page</title></head><body><h1>This is a test page</h1></body></html>" | sudo tee /data/web_static/releases/test/index.html > /dev/null
 
-	location / {
-		root /var/www/html/;
-		try_files \$uri \$uri/ =404;
-	}
+# Create or recreate symbolic link
+sudo ln -sf /data/web_static/releases/test /data/web_static/current
 
-	location /hbnb_static/ {
-		alias /data/web_static/current/;
-		try_files \$uri \$uri/ =404;
-	}
+# Give ownership of the /data/ folder to the ubuntu user and group recursively
+sudo chown -R ubuntu:ubuntu /data/
 
-	if (\$request_filename ~ redirect_me) {
-		rewrite ^ https://sketchfab.com/bluepeno/models permanent;
-	}
+# Update Nginx configuration
+sudo bash -c 'cat > /etc/nginx/sites-available/default <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
 
-	location = /404.html {
-		root /var/www/error/;
-		internal;
-	}
-}"
+    root /var/www/html;
 
-# Create a fake HTML file /data/web_static/releases/test/index.html (with simple content, to test your Nginx configuration)
-HOME_PAGE="<!DOCTYPE html>
-<html lang='en-US'>
-	<head>
-		<title>Home - AirBnB Clone</title>
-	</head>
-	<body>
-		<h1>Welcome to AirBnB!</h1>
-	<body>
-</html>
-"
+    index index.html index.htm index.nginx-debian.html;
 
-mkdir -p /var/www/html /var/www/error
-chmod -R 755 /var/www
-echo 'Hello World!' > /var/www/html/index.html
-echo -e "Ceci n\x27est pas une page" > /var/www/error/404.html
+    server_name _;
 
-# Create the folder /data/ if it doesn’t already exist
-# Create the folder /data/web_static/ if it doesn’t already exist
-# Create the folder /data/web_static/releases/ if it doesn’t already exist
-# Create the folder /data/web_static/releases/test/ if it doesn’t already exist
-mkdir -p /data/web_static/releases/test/
+    location /hbnb_static {
+        alias /data/web_static/current/;
+    }
 
-# Create the folder /data/web_static/shared/ if it doesn’t already exist
-mkdir -p /data/web_static/shared/
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF'
 
-# Echo fake HTML here
-echo -e "$HOME_PAGE" > /data/web_static/releases/test/index.html
-[ -d /data/web_static/current ] && rm -rf /data/web_static/current
+# Restart Nginx
+sudo systemctl restart nginx
 
-# Create a symbolic link /data/web_static/current linked to the /data/web_static/releases/test/
-# If the symbolic link already exists, it should be deleted and recreated every time the script is ran
-ln -sf /data/web_static/releases/test/ /data/web_static/current
-
-# Give ownership of the /data/ folder to the ubuntu user AND group (you can assume this user and group exist).
-# This should be recursive; everything inside should be created/owned by this user/group.
-chown -hR ubuntu:ubuntu /data
-
-# Update the Nginx configuration to serve the content of /data/web_static/current/ to hbnb_static
-# (ex: https://mydomainname.tech/hbnb_static). Don’t forget to restart Nginx after updating the configuration:
-# Use alias inside your Nginx configuration
-bash -c "echo -e '$SERVER_CONFIG' > /etc/nginx/sites-available/default"
-ln -sf '/etc/nginx/sites-available/default' '/etc/nginx/sites-enabled/default'
-
-if [ "$(pgrep -c nginx)" -le 0 ]; then
-	service nginx start
-else
-	service nginx restart
-    service nginx reload
-fi
