@@ -30,8 +30,9 @@ def c_is_cool(text):
     return "C " + text.replace('_', ' ')
 
 
-@app.route('/python/<text>', defaults={'text': 'is cool'},
+@app.route('/python/', defaults={'text': 'is cool'},
            strict_slashes=False)
+@app.route('/python/<text>', strict_slashes=False)
 def magic_python(text):
     """
     Displays magicity of python
