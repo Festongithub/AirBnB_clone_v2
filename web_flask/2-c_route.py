@@ -27,7 +27,7 @@ def c_is_cool(text):
     """
     Displays  c
     """
-    return "C" + text.replace('_', '')
+    return "C " + text.replace('_', ' ')
 
 
 if __name__ == '__main__':
