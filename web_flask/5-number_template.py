@@ -53,7 +53,7 @@ def number_template(n):
     """
     Renders  a html template
     """
-    return render_template('5-number.html', n=n)
+    return render_template('5-number.html', num=n)
 
 
 if __name__ == '__main__':
