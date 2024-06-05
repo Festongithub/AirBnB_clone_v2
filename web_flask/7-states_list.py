@@ -9,6 +9,7 @@ from models import storage
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
+
 @app.teardown_appcontext
 def db_teardown(exception=None):
     """
@@ -19,13 +20,13 @@ def db_teardown(exception=None):
 
 
 @app.route('/states_list')
-
 def list_states(n=None):
     """
     display list in HTML format
     """
     states = storag.all('State')
     return render_template('7-states_list.html', states=states)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
